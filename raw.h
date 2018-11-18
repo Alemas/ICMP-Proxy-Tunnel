@@ -23,7 +23,7 @@ struct ip_hdr {
 struct icmp_hdr {
 	uint8_t type;			/* Type */
 	uint8_t code;			/* Code identifier */
-	uint16_t checksum;		/* Checksum */
+	// uint16_t checksum;		/* Checksum */
 	char *payload;			/* Data Payload */
 };
 

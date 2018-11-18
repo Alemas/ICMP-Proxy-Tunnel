@@ -279,14 +279,18 @@ void run_tunnel(char *dest, int server, int argc, char *argv[])
 			
 			/* Fill ICMP Data */
 			
-			// Echo Reply caso seja servidor
+			// Echo Reply (type = 0) caso seja servidor
 			if (server) {
 				buffer_u.cooked_data.icmp.type = 0;
 				buffer_u.cooked_data.icmp.code = htons(0x00);
-				buffer_u.cooked_data.icmp.checksum = htons(0x00);
+				// buffer_u.cooked_data.icmp.checksum = htons(0x00);
 				//buffer_u.cooked_data.icmp.payload = ;
+
+			// Echo Request (type = 8) caso seja cliente
 			} else {
-				
+				buffer_u.cooked_data.icmp.type = 8;
+				buffer_u.cooked_data.icmp.code = htons(0x00);
+				// buffer_u.cooked_data.icmp.checksum = htons(0x00);
 			}
 
 			buffer_u.cooked_data.payload.ip.sum = htons((~ipchksum((uint8_t *)&buffer_u.cooked_data.payload.ip) & 0xffff));
@@ -295,28 +299,29 @@ void run_tunnel(char *dest, int server, int argc, char *argv[])
 			memcpy(buffer_u.raw_data + sizeof(struct eth_hdr) + sizeof(struct ip_hdr) + sizeof(struct icmp_hdr), buf, size);
 
 			/* Send it.. */
+			printf("sending\n");
 			memcpy(socket_address.sll_addr, dst_mac, 6);
-			if (sendto(sock_fd, buffer_u.raw_data, size + sizeof(struct eth_hdr) + sizeof(struct ip_hdr), 0, (struct sockaddr*)&socket_address, sizeof(struct sockaddr_ll)) < 0)
+			if (sendto(sock_fd, buffer_u.raw_data, size + sizeof(struct eth_hdr) + sizeof(struct ip_hdr) + sizeof(struct icmp_hdr), 0, (struct sockaddr*)&socket_address, sizeof(struct sockaddr_ll)) < 0)
 				printf("Send failed\n");
 
 			printf("[DEBUG] Sent packet\n");
-		}
 
+		}
 		if (FD_ISSET(sock_fd, &fs)) {
 			size = recvfrom(sock_fd, buffer_u.raw_data, ETH_LEN, 0, NULL, NULL);
 			if (buffer_u.cooked_data.ethernet.eth_type == ntohs(ETH_P_IP)){
 				if (server) {
-					if (	buffer_u.cooked_data.payload.ip.dst[0] == 192 && buffer_u.cooked_data.payload.ip.dst[1] == 168 &&
+					if (buffer_u.cooked_data.payload.ip.dst[0] == 192 && buffer_u.cooked_data.payload.ip.dst[1] == 168 &&
 						buffer_u.cooked_data.payload.ip.dst[2] == 6 && buffer_u.cooked_data.payload.ip.dst[3] == 6){
-						memcpy(buf, buffer_u.raw_data + sizeof(struct eth_hdr) + sizeof(struct ip_hdr), size);
+						memcpy(buf, buffer_u.raw_data + sizeof(struct eth_hdr) + sizeof(struct ip_hdr) + sizeof(struct icmp_hdr), size);
 						print_hexdump(buf, size);
 						tun_write(tun_fd, buf, size);
 						printf("[DEBUG] Write tun device\n");
 					}
 				} else {
-					if (	buffer_u.cooked_data.payload.ip.dst[0] == 192 && buffer_u.cooked_data.payload.ip.dst[1] == 168 &&
+					if (buffer_u.cooked_data.payload.ip.dst[0] == 192 && buffer_u.cooked_data.payload.ip.dst[1] == 168 &&
 						buffer_u.cooked_data.payload.ip.dst[2] == 6 && buffer_u.cooked_data.payload.ip.dst[3] == 6){
-						memcpy(buf, buffer_u.raw_data + sizeof(struct eth_hdr) + sizeof(struct ip_hdr), size);
+						memcpy(buf, buffer_u.raw_data + sizeof(struct eth_hdr) + sizeof(struct ip_hdr) + sizeof(struct icmp_hdr), size);
 						print_hexdump(buf, size);
 						tun_write(tun_fd, buf, size);
 						printf("[DEBUG] Write tun device\n");
