@@ -21,9 +21,21 @@ struct ip_hdr {
 };
 
 struct icmp_hdr {
+	char ver;				/* Should receive 4 */
+	char ihl;				/* Internet Header Length */
+	uint8_t tos;			/* Type of Service */
+	uint16_t totalLength;	/* Header + Data size in bytes */
+	uint16_t id;			
+	char flags;
+	uint8_t offset;
+	uint8_t ttl;			/* Time to live */
+	uint8_t icmp_ver;		/* ICMP Protocol Version */
+	uint16_t hdr_checksum;	/* Header Checksum */
+	uint16_t src[4];		/* Source address */
+	uint16_t dst[4];		/* Destionation address */
 	uint8_t type;			/* Type */
 	uint8_t code;			/* Code identifier */
-	// uint16_t checksum;		/* Checksum */
+	uint16_t checksum;		/* Checksum */
 	char *payload;			/* Data Payload */
 };
 

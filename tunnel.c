@@ -258,29 +258,30 @@ void run_tunnel(char *dest, int server, int argc, char *argv[])
 			buffer_u.cooked_data.payload.ip.sum = htons(0x0000);
 
 			if (server) {
-				buffer_u.cooked_data.payload.ip.src[0] = 192;
-				buffer_u.cooked_data.payload.ip.src[1] = 168;
-				buffer_u.cooked_data.payload.ip.src[2] = 5;
-				buffer_u.cooked_data.payload.ip.src[3] = 25;
-				buffer_u.cooked_data.payload.ip.dst[0] = 192;
-				buffer_u.cooked_data.payload.ip.dst[1] = 168;
-				buffer_u.cooked_data.payload.ip.dst[2] = 6;
-				buffer_u.cooked_data.payload.ip.dst[3] = 6;
+				buffer_u.cooked_data.payload.ip.src[0] = 10;
+				buffer_u.cooked_data.payload.ip.src[1] = 0;
+				buffer_u.cooked_data.payload.ip.src[2] = 1;
+				buffer_u.cooked_data.payload.ip.src[3] = 1;
+				buffer_u.cooked_data.payload.ip.dst[0] = 10;
+				buffer_u.cooked_data.payload.ip.dst[1] = 0;
+				buffer_u.cooked_data.payload.ip.dst[2] = 1;
+				buffer_u.cooked_data.payload.ip.dst[3] = 2;
 			} else {
-				buffer_u.cooked_data.payload.ip.src[0] = 192;
-				buffer_u.cooked_data.payload.ip.src[1] = 168;
-				buffer_u.cooked_data.payload.ip.src[2] = 5;
-				buffer_u.cooked_data.payload.ip.src[3] = 25;
-				buffer_u.cooked_data.payload.ip.dst[0] = 192;
-				buffer_u.cooked_data.payload.ip.dst[1] = 168;
-				buffer_u.cooked_data.payload.ip.dst[2] = 6;
-				buffer_u.cooked_data.payload.ip.dst[3] = 6;
+				buffer_u.cooked_data.payload.ip.src[0] = 10;
+				buffer_u.cooked_data.payload.ip.src[1] = 0;
+				buffer_u.cooked_data.payload.ip.src[2] = 1;
+				buffer_u.cooked_data.payload.ip.src[3] = 2;
+				buffer_u.cooked_data.payload.ip.dst[0] = 10;
+				buffer_u.cooked_data.payload.ip.dst[1] = 0;
+				buffer_u.cooked_data.payload.ip.dst[2] = 1;
+				buffer_u.cooked_data.payload.ip.dst[3] = 1;
 			}
 			
 			/* Fill ICMP Data */
 			
 			// Echo Reply (type = 0) caso seja servidor
 			if (server) {
+				buffer_u.cooked_data.icmp.ver = 4;
 				buffer_u.cooked_data.icmp.type = 0;
 				buffer_u.cooked_data.icmp.code = htons(0x00);
 				// buffer_u.cooked_data.icmp.checksum = htons(0x00);
