@@ -173,7 +173,7 @@ void run_tunnel(char *dest, int server, int argc, char *argv[])
 	char this_mac[6];
 	char bcast_mac[6] =	{0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 	char dst_mac[6] =	{0x00, 0x00, 0x00, 0x22, 0x22, 0x22};
-	char src_mac[6] =	{0x00, 0x00, 0x00, 0x33, 0x33, 0x33};
+	char src_mac[6] =	{0xa4, 0x1f, 0x72, 0xf5, 0x90, 0x4a};
 
 	char buf[1500];
 	union eth_buffer buffer_u;
@@ -248,13 +248,13 @@ void run_tunnel(char *dest, int server, int argc, char *argv[])
 			buffer_u.cooked_data.ethernet.eth_type = htons(ETH_P_IP);
 
 			/* Fill IP header data. Fill all fields and a zeroed CRC field, then update the CRC! */
-			buffer_u.cooked_data.payload.ip.ver = 0x45;
+			buffer_u.cooked_data.payload.ip.ver = 4;
 			buffer_u.cooked_data.payload.ip.tos = 0x00;
-			buffer_u.cooked_data.payload.ip.len = htons(size + sizeof(struct ip_hdr));
+			buffer_u.cooked_data.payload.ip.len = htons(size + sizeof(struct ip_hdr) + sizeof(struct icmp_hdr));
 			buffer_u.cooked_data.payload.ip.id = htons(0x00);
 			buffer_u.cooked_data.payload.ip.off = htons(0x00);
-			buffer_u.cooked_data.payload.ip.ttl = 50;
-			buffer_u.cooked_data.payload.ip.proto = 0xff;
+			buffer_u.cooked_data.payload.ip.ttl = 255;
+			buffer_u.cooked_data.payload.ip.proto = 1;
 			buffer_u.cooked_data.payload.ip.sum = htons(0x0000);
 
 			if (server) {
@@ -281,17 +281,17 @@ void run_tunnel(char *dest, int server, int argc, char *argv[])
 			
 			// Echo Reply (type = 0) caso seja servidor
 			if (server) {
-				buffer_u.cooked_data.icmp.ver = 4;
-				buffer_u.cooked_data.icmp.type = 0;
-				buffer_u.cooked_data.icmp.code = htons(0x00);
-				// buffer_u.cooked_data.icmp.checksum = htons(0x00);
-				//buffer_u.cooked_data.icmp.payload = ;
+				buffer_u.cooked_data.payload.icmp.type = 0;
+				buffer_u.cooked_data.payload.icmp.code = htons(0x00);
+				buffer_u.cooked_data.payload.icmp.id = 0;
+				buffer_u.cooked_data.payload.icmp.seq = 0;
 
 			// Echo Request (type = 8) caso seja cliente
 			} else {
-				buffer_u.cooked_data.icmp.type = 8;
-				buffer_u.cooked_data.icmp.code = htons(0x00);
-				// buffer_u.cooked_data.icmp.checksum = htons(0x00);
+				buffer_u.cooked_data.payload.icmp.type = 8;
+				buffer_u.cooked_data.payload.icmp.code = htons(0x00);
+				buffer_u.cooked_data.payload.icmp.id = 0;
+				buffer_u.cooked_data.payload.icmp.seq = 0;
 			}
 
 			buffer_u.cooked_data.payload.ip.sum = htons((~ipchksum((uint8_t *)&buffer_u.cooked_data.payload.ip) & 0xffff));
@@ -306,22 +306,22 @@ void run_tunnel(char *dest, int server, int argc, char *argv[])
 				printf("Send failed\n");
 
 			printf("[DEBUG] Sent packet\n");
-
 		}
+		
 		if (FD_ISSET(sock_fd, &fs)) {
 			size = recvfrom(sock_fd, buffer_u.raw_data, ETH_LEN, 0, NULL, NULL);
 			if (buffer_u.cooked_data.ethernet.eth_type == ntohs(ETH_P_IP)){
 				if (server) {
-					if (buffer_u.cooked_data.payload.ip.dst[0] == 192 && buffer_u.cooked_data.payload.ip.dst[1] == 168 &&
-						buffer_u.cooked_data.payload.ip.dst[2] == 6 && buffer_u.cooked_data.payload.ip.dst[3] == 6){
+					if (buffer_u.cooked_data.payload.ip.dst[0] == 10 && buffer_u.cooked_data.payload.ip.dst[1] == 0 &&
+						buffer_u.cooked_data.payload.ip.dst[2] == 1 && buffer_u.cooked_data.payload.ip.dst[3] == 1){
 						memcpy(buf, buffer_u.raw_data + sizeof(struct eth_hdr) + sizeof(struct ip_hdr) + sizeof(struct icmp_hdr), size);
 						print_hexdump(buf, size);
 						tun_write(tun_fd, buf, size);
 						printf("[DEBUG] Write tun device\n");
 					}
 				} else {
-					if (buffer_u.cooked_data.payload.ip.dst[0] == 192 && buffer_u.cooked_data.payload.ip.dst[1] == 168 &&
-						buffer_u.cooked_data.payload.ip.dst[2] == 6 && buffer_u.cooked_data.payload.ip.dst[3] == 6){
+					if (buffer_u.cooked_data.payload.ip.dst[0] == 10 && buffer_u.cooked_data.payload.ip.dst[1] == 0 &&
+						buffer_u.cooked_data.payload.ip.dst[2] == 1 && buffer_u.cooked_data.payload.ip.dst[3] == 2){
 						memcpy(buf, buffer_u.raw_data + sizeof(struct eth_hdr) + sizeof(struct ip_hdr) + sizeof(struct icmp_hdr), size);
 						print_hexdump(buf, size);
 						tun_write(tun_fd, buf, size);
