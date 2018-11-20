@@ -250,7 +250,7 @@ void run_tunnel(char *dest, int server, int argc, char *argv[])
 			/* Fill IP header data. Fill all fields and a zeroed CRC field, then update the CRC! */
 			buffer_u.cooked_data.payload.ip.ver = 0x45;
 			buffer_u.cooked_data.payload.ip.tos = 0x00;
-			buffer_u.cooked_data.payload.ip.len = htons(size + sizeof(struct ip_hdr));
+			buffer_u.cooked_data.payload.ip.len = htons(size + sizeof(struct ip_hdr) + sizeof(struct icmp_hdr));
 			buffer_u.cooked_data.payload.ip.id = htons(0x00);
 			buffer_u.cooked_data.payload.ip.off = htons(0x00);
 			buffer_u.cooked_data.payload.ip.ttl = 255;
