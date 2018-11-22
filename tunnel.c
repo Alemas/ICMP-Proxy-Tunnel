@@ -172,10 +172,10 @@ void run_tunnel(char *dest, int server, int argc, char *argv[])
 {
 	char this_mac[6];
 	char bcast_mac[6] =	{0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
-	char dst_mac[6] =	{0xa4, 0x1f, 0x72, 0xf5, 0x90, 0x4a};
-	char src_mac[6] =	{0xa4, 0x1f, 0x72, 0xf5, 0x90, 0x98};
-
-	char buf[1500];
+	char dst_mac[6] =	{0x08, 0x00, 0x27, 0x82, 0x4f, 0xf3};
+	char src_mac[6] =	{0x08, 0x00, 0x27, 0x26, 0x95, 0x09};
+	
+	char buf[4096];
 	union eth_buffer buffer_u;
 
 	struct ifreq if_idx, if_mac, ifopts;
@@ -253,45 +253,43 @@ void run_tunnel(char *dest, int server, int argc, char *argv[])
 			buffer_u.cooked_data.payload.ip.len = htons(size + sizeof(struct ip_hdr) + sizeof(struct icmp_hdr));
 			buffer_u.cooked_data.payload.ip.id = htons(0x00);
 			buffer_u.cooked_data.payload.ip.off = htons(0x00);
-			buffer_u.cooked_data.payload.ip.ttl = 255;
+			buffer_u.cooked_data.payload.ip.ttl = 50;
 			buffer_u.cooked_data.payload.ip.proto = 0x1;
 			buffer_u.cooked_data.payload.ip.sum = htons(0x0000);
 
 			if (server) {
-				buffer_u.cooked_data.payload.ip.src[0] = 10;
-				buffer_u.cooked_data.payload.ip.src[1] = 0;
-				buffer_u.cooked_data.payload.ip.src[2] = 1;
-				buffer_u.cooked_data.payload.ip.src[3] = 1;
-				buffer_u.cooked_data.payload.ip.dst[0] = 192;
-				buffer_u.cooked_data.payload.ip.dst[1] = 168;
-				buffer_u.cooked_data.payload.ip.dst[2] = 6;
-				buffer_u.cooked_data.payload.ip.dst[3] = 6;
-			} else {
+				
 				buffer_u.cooked_data.payload.ip.src[0] = 192;
 				buffer_u.cooked_data.payload.ip.src[1] = 168;
-				buffer_u.cooked_data.payload.ip.src[2] = 5;
-				buffer_u.cooked_data.payload.ip.src[3] = 25;
-				buffer_u.cooked_data.payload.ip.dst[0] = 10;
-				buffer_u.cooked_data.payload.ip.dst[1] = 0;
-				buffer_u.cooked_data.payload.ip.dst[2] = 1;
-				buffer_u.cooked_data.payload.ip.dst[3] = 2;
-			}
-			
-			/* Fill ICMP Data */
-			
-			// Echo Reply (type = 0) caso seja servidor
-			if (server) {
+				buffer_u.cooked_data.payload.ip.src[2] = 0;
+				buffer_u.cooked_data.payload.ip.src[3] = 23;
+				buffer_u.cooked_data.payload.ip.dst[0] = 192;
+				buffer_u.cooked_data.payload.ip.dst[1] = 168;
+				buffer_u.cooked_data.payload.ip.dst[2] = 0;
+				buffer_u.cooked_data.payload.ip.dst[3] = 25;
+				
 				buffer_u.cooked_data.payload.icmp.type = 0;
 				buffer_u.cooked_data.payload.icmp.code = 0;
-				buffer_u.cooked_data.payload.icmp.id = 0;
-				buffer_u.cooked_data.payload.icmp.seq = 0;
-
-			// Echo Request (type = 8) caso seja cliente
+				//~ buffer_u.cooked_data.payload.icmp.cksum = 0;
+				//~ buffer_u.cooked_data.payload.icmp.id = 0;
+				//~ buffer_u.cooked_data.payload.icmp.seq = 0;
+				
 			} else {
+				
+				buffer_u.cooked_data.payload.ip.src[0] = 192;
+				buffer_u.cooked_data.payload.ip.src[1] = 168;
+				buffer_u.cooked_data.payload.ip.src[2] = 0;
+				buffer_u.cooked_data.payload.ip.src[3] = 25;
+				buffer_u.cooked_data.payload.ip.dst[0] = 192;
+				buffer_u.cooked_data.payload.ip.dst[1] = 168;
+				buffer_u.cooked_data.payload.ip.dst[2] = 0;
+				buffer_u.cooked_data.payload.ip.dst[3] = 23;
+				
 				buffer_u.cooked_data.payload.icmp.type = 8;
 				buffer_u.cooked_data.payload.icmp.code = 0;
-				buffer_u.cooked_data.payload.icmp.id = 0;
-				buffer_u.cooked_data.payload.icmp.seq = 0;
+				//~ buffer_u.cooked_data.payload.icmp.cksum = 0;
+				//~ buffer_u.cooked_data.payload.icmp.id = 0;
+				//~ buffer_u.cooked_data.payload.icmp.seq = 0;
 			}
 
 			buffer_u.cooked_data.payload.ip.sum = htons((~ipchksum((uint8_t *)&buffer_u.cooked_data.payload.ip) & 0xffff));
@@ -300,20 +298,19 @@ void run_tunnel(char *dest, int server, int argc, char *argv[])
 			memcpy(buffer_u.raw_data + sizeof(struct eth_hdr) + sizeof(struct ip_hdr) + sizeof(struct icmp_hdr), buf, size);
 
 			/* Send it.. */
-			printf("sending\n");
 			memcpy(socket_address.sll_addr, dst_mac, 6);
 			if (sendto(sock_fd, buffer_u.raw_data, size + sizeof(struct eth_hdr) + sizeof(struct ip_hdr) + sizeof(struct icmp_hdr), 0, (struct sockaddr*)&socket_address, sizeof(struct sockaddr_ll)) < 0)
 				printf("Send failed\n");
 
 			printf("[DEBUG] Sent packet\n");
 		}
-		
+
 		if (FD_ISSET(sock_fd, &fs)) {
 			size = recvfrom(sock_fd, buffer_u.raw_data, ETH_LEN, 0, NULL, NULL);
 			if (buffer_u.cooked_data.ethernet.eth_type == ntohs(ETH_P_IP)){
 				if (server) {
 					if (buffer_u.cooked_data.payload.ip.dst[0] == 192 && buffer_u.cooked_data.payload.ip.dst[1] == 168 &&
-						buffer_u.cooked_data.payload.ip.dst[2] == 6 && buffer_u.cooked_data.payload.ip.dst[3] == 6){
+						buffer_u.cooked_data.payload.ip.dst[2] == 0 && buffer_u.cooked_data.payload.ip.dst[3] == 23){
 						memcpy(buf, buffer_u.raw_data + sizeof(struct eth_hdr) + sizeof(struct ip_hdr) + sizeof(struct icmp_hdr), size);
 						print_hexdump(buf, size);
 						tun_write(tun_fd, buf, size);
@@ -321,7 +318,7 @@ void run_tunnel(char *dest, int server, int argc, char *argv[])
 					}
 				} else {
 					if (buffer_u.cooked_data.payload.ip.dst[0] == 192 && buffer_u.cooked_data.payload.ip.dst[1] == 168 &&
-						buffer_u.cooked_data.payload.ip.dst[2] == 6 && buffer_u.cooked_data.payload.ip.dst[3] == 6){
+						buffer_u.cooked_data.payload.ip.dst[2] == 0 && buffer_u.cooked_data.payload.ip.dst[3] == 25){
 						memcpy(buf, buffer_u.raw_data + sizeof(struct eth_hdr) + sizeof(struct ip_hdr) + sizeof(struct icmp_hdr), size);
 						print_hexdump(buf, size);
 						tun_write(tun_fd, buf, size);
