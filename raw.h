@@ -21,21 +21,21 @@ struct ip_hdr {
 };
 
 struct icmp_hdr {
-	unsigned char type;
-	unsigned char code;
-	unsigned short int cksum;
-	unsigned short int id;
-	unsigned short int seq;
+	uint8_t type;
+	uint8_t code;
+	uint16_t cksum;
+	uint16_t id;
+	uint16_t seq;
 };
 
-union packet_u {
+struct packet_u {
 	struct ip_hdr ip;
 	struct icmp_hdr icmp;
 };
 
 struct eth_frame_s {
 	struct eth_hdr ethernet;
-	union packet_u payload;
+	struct packet_u payload;
 };
 
 union eth_buffer {
